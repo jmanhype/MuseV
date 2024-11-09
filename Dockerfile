@@ -18,33 +18,22 @@ RUN apt-get update && apt-get install -y \
 RUN conda create -n musev python=3.9 -y
 SHELL ["conda", "run", "-n", "musev", "/bin/bash", "-c"]
 
-# Clone MuseV repository
-RUN git clone https://github.com/TMElyralab/MuseV.git /MuseV
+# Clone MuseV repository from the fork
+WORKDIR /
+RUN git clone https://github.com/jmanhype/MuseV.git /MuseV
 WORKDIR /MuseV
 RUN git submodule init && \
     git submodule update --init --recursive
 
-# Clone MMCV using git protocol
-WORKDIR /
-RUN git config --global http.sslVerify false && \
-    git clone --depth 1 https://github.com/open-mmlab/mmcv.git /mmcv || \
-    (sleep 5 && git clone --depth 1 https://github.com/open-mmlab/mmcv.git /mmcv)
+# Install MMCV using pip instead of git clone
+RUN pip install --no-cache-dir -U openmim && \
+    mim install mmengine && \
+    mim install "mmcv>=2.0.1" && \
+    mim install "mmdet>=3.1.0" && \
+    mim install "mmpose>=1.1.0"
 
 # Install Python dependencies
-WORKDIR /MuseV
-RUN pip install --no-cache-dir \
-    diffusers>=0.7.2 \
-    controlnet_aux>=0.3.0 \
-    gradio==4.12 \
-    cuid \
-    spaces \
-    accelerate \
-    transformers \
-    safetensors
-
-# Install MMCV from source
-WORKDIR /mmcv
-RUN pip install -e .
+RUN pip install --no-cache-dir -r requirements.txt
 
 # Return to MuseV directory
 WORKDIR /MuseV
